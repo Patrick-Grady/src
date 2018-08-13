@@ -2,6 +2,7 @@ package model;
 
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.ArrayList;
 
 public class ChessModel {
     public enum Color {
@@ -46,10 +47,33 @@ public class ChessModel {
     
     public String[] getAllMovesFrom(String piece) throws Exception {
         if(!properPositionFormat(piece)) {
-            throw new Exception("Improper format");
+            throw new Exception("Improper format: " + piece);
         }
         
         return getCurrentState().getAllMovesFrom(piece);
+    }
+    
+    public String getState() throws Exception {
+        ArrayList<String> results = new ArrayList<>();
+        ChessState state = getCurrentState();
+        
+        results.add(state.getCurrentPlayerColor().toString());
+        
+        if(state.checkmated()) {
+            results.add("checkmated");
+        }
+        else if(state.stalemated()) {
+            results.add("stalemated");
+        }
+        else if(state.inCheck()) {
+            results.add("checked");
+        }
+        
+        return String.join(" ", results);
+    }
+    
+    public String[][]getBoard() {
+        return getCurrentState().getBoard();
     }
     
     // validation
@@ -69,10 +93,10 @@ public class ChessModel {
     
     private void validate(String move) throws Exception {
         if(syntaxError(move)) {
-            throw new Exception("Improperly formatted move");
+            throw new Exception("Improperly formatted move: " + move);
         }
         else if(!getCurrentState().canExecute(move)) {
-            throw new Exception("Invalid move");
+            throw new Exception("Invalid move: " + move);
         }
     }
     
@@ -80,21 +104,21 @@ public class ChessModel {
         String []split = move.split(" ");
         
         if(split.length == 1) {
-            return move.equals("0-0") || move.equals("O-O-O") || move.equals("0-0-0") || move.equals("O-O-O");
+            return !(move.equals("0-0") || move.equals("O-O-O") || move.equals("0-0-0") || move.equals("O-O-O"));
         }
         else if(split.length != 2) {
-            return false;
+            return true;
         }
         
         String start = split[0], end = split[1];
         if(start.length() != end.length()) {
-            return false;
+            return true;
         }
         else if(start.length() == 3 && start.charAt(0) != end.charAt(0)) {
-            return false;
+            return true;
         }
         
-        return properPositionFormat(start) && properPositionFormat(end);
+        return !properPositionFormat(start) || !properPositionFormat(end);
     }
     
     private boolean properPositionFormat(String pos) {
@@ -103,8 +127,8 @@ public class ChessModel {
         }
         
         pos = pos.substring(pos.length()-2, pos.length());
-        char col = pos.charAt(1);
-        int row = pos.charAt(2) - '0';
+        char col = pos.charAt(0);
+        int row = pos.charAt(1) - '0';
                     
         return row >= 1 && row <= 8 && col >= 'A' && col <= 'H';        
     }

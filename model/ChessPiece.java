@@ -43,4 +43,30 @@ public class ChessPiece implements Cloneable {
     public ChessPiece clone() throws CloneNotSupportedException {
         return (ChessPiece) super.clone();
     }
+    
+    @Override
+    public String toString() {
+        String colorPrefix = color == ChessModel.Color.white ? "W" : "B";
+        String pieceSuffix = "P";
+        
+        switch(type) {
+            case knight:
+                pieceSuffix = "N";
+                break;
+            case bishop:
+                pieceSuffix = "B";
+                break;
+            case rook:
+                pieceSuffix = "R";
+                break;
+            case queen:
+                pieceSuffix = "Q";
+                break;
+            case king:
+                pieceSuffix = "K";
+                break;
+        }
+        
+        return colorPrefix + pieceSuffix;
+    }
 }

@@ -38,19 +38,19 @@ public class ChessState implements Cloneable {
         return stringMoves;
     }
     
-    public boolean checkmated() {
+    public boolean checkmated() throws Exception {
         return inCheck() && !canMoveAny(color);
     }
     
-    public boolean stalemated() {
+    public boolean stalemated() throws Exception {
         return !inCheck() && !canMoveAny(color);
     }
     
-    public boolean inCheck() {
+    public boolean inCheck() throws Exception {
         return inCheck(color);
     }
     
-    public boolean canExecute(String move) {
+    public boolean canExecute(String move) throws Exception {
         if(move.equals("0-0") || move.equals("O-O")) {
             return canCastle(KING_SIDE);
         }
@@ -60,7 +60,19 @@ public class ChessState implements Cloneable {
         
         Position []positions = getStartAndEnd(move);
         Position start = positions[0], end = positions[1];
-        return validRef(move) && board.pathIsClear(start, end) && !movePutsPlayerInCheck(start, end);
+        
+        if(!validRef(move)) {
+            throw new Exception("Invalid ref");
+        }
+        else if(!board.pathIsClear(start, end)) {
+            throw new Exception("path unclear");
+        }
+        else if(movePutsPlayerInCheck(start, end)) {
+            throw new Exception("puts in check");
+        }
+        
+        return true;
+//        return validRef(move) && board.pathIsClear(start, end) && !movePutsPlayerInCheck(start, end);
     }
     
     public void execute(String move) {
@@ -70,14 +82,19 @@ public class ChessState implements Cloneable {
         else if(move.equals("0-0-0") || move.equals("O-O-O")) {
             castle(QUEEN_SIDE);
         }
-        
-        Position []positions = getStartAndEnd(move);
-        board.move(positions[0], positions[1]);
+        else {
+            Position []positions = getStartAndEnd(move);
+            board.move(positions[0], positions[1]);
+        }
         color = getOpponent(color);
     }
     
+    public String[][] getBoard() {
+        return board.getBoard();
+    }
+    
     // helper
-    private boolean inCheck(ChessModel.Color color) {
+    private boolean inCheck(ChessModel.Color color) throws Exception {
         ChessModel.Color opponent = getOpponent(color);    
         Position kingPosition = board.getKingPosition(color);
         
@@ -91,7 +108,7 @@ public class ChessState implements Cloneable {
         return false;
     }
     
-    public boolean canMoveAny(ChessModel.Color color) {
+    public boolean canMoveAny(ChessModel.Color color) throws Exception {
         ArrayList<Position> pieces = board.getAllPieces(color);
         
         for(Position p : pieces) {
@@ -103,7 +120,7 @@ public class ChessState implements Cloneable {
         return false;
     }
     
-    private ArrayList<Position> getAllMovesFrom(Position start) {
+    private ArrayList<Position> getAllMovesFrom(Position start) throws Exception {
         // ChessPiece piece = board.getPieceAt(start);
         ArrayList<Position> canMoveTo = new ArrayList<>();
         
@@ -174,7 +191,7 @@ public class ChessState implements Cloneable {
     private Position mapStringToPosition(String pos) {
         pos = pos.substring(pos.length()-2, pos.length());
         char col = pos.charAt(0);
-        int row = pos.charAt(1);
+        int row = pos.charAt(1) - '0';
                 
         return new Position(row, col);
     }
@@ -186,7 +203,7 @@ public class ChessState implements Cloneable {
         return new Position[]{start, end};
     }
     
-    private boolean movePutsPlayerInCheck(Position start, Position end) {
+    private boolean movePutsPlayerInCheck(Position start, Position end) throws Exception {
         ChessPiece piece = board.getPieceAt(end);
         board.move(start, end);
         boolean checked = inCheck();
@@ -200,12 +217,15 @@ public class ChessState implements Cloneable {
         Position []positions = getStartAndEnd(move);
         String []pos = move.split(" ");
         ChessPiece piece = board.getPieceAt(positions[0]);
-        ChessModel.PieceType moveType = mapLetterToType(pos[0].charAt(0));
+        ChessModel.PieceType moveType = ChessModel.PieceType.pawn;
+        if(pos[0].length() > 2) {
+            moveType = mapLetterToType(pos[0].charAt(0));
+        }
         
         return piece != null && piece.getType() == moveType;
     }
     
-    private boolean canCastle(boolean kingSide) {
+    private boolean canCastle(boolean kingSide) throws Exception {
         Position kingPosition = board.getKingPosition(color);
         ChessPiece king = board.getPieceAt(kingPosition);
         if(king.hasMoved()) {
@@ -219,7 +239,7 @@ public class ChessState implements Cloneable {
         }
         
         int direction = kingSide ? 1 : -1;
-        for(int i = 0; i < 2; i++) {
+        for(int i = 1; i <= 2; i++) {
             Position position = new Position(row, (char) ('E' + i * direction));
             if(!board.isOpen(position) || movePutsPlayerInCheck(kingPosition, position)) {
                 return false;

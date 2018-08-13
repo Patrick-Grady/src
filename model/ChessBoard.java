@@ -70,7 +70,7 @@ public class ChessBoard implements Cloneable {
         clearSpot(start);
     }
         
-    public boolean pathIsClear(Position start, Position end) {
+    public boolean pathIsClear(Position start, Position end) throws Exception {
         ChessPiece piece = getPieceAt(start);
         if(piece == null || !spotFreeToTake(piece, end)) {
             return false;
@@ -101,7 +101,7 @@ public class ChessBoard implements Cloneable {
         int direction = color == ChessModel.Color.white ? 1 : -1;
 
         boolean singleStep = end.getColumn() == start.getColumn() && end.getRow() - start.getRow() == 1 * direction;
-        boolean attack = Math.abs(end.getColumn() - start.getColumn()) == 1 && end.getRow() - start.getRow() == 1 * direction && getPieceAt(end).getColor() != color;
+        boolean attack = Math.abs(end.getColumn() - start.getColumn()) == 1 && end.getRow() - start.getRow() == 1 * direction && !isOpen(end) && getPieceAt(end).getColor() != color;
         boolean doubleStep = !pawn.hasMoved() && end.getColumn() == start.getColumn() && end.getRow() - start.getRow() == 2 * direction;
         
         return singleStep || attack || doubleStep;
@@ -120,7 +120,7 @@ public class ChessBoard implements Cloneable {
         return true;
     }
     
-    private boolean canMoveDiagonally(Position start, Position end) {
+    private boolean canMoveDiagonally(Position start, Position end) throws Exception {
         int hOffset = Math.abs(end.getColumn() - start.getColumn());    // horizonal offset
         int vOffset = Math.abs(end.getRow() - start.getRow());    // vertical offset
         
@@ -135,8 +135,9 @@ public class ChessBoard implements Cloneable {
         
         // check all spots diagonally between start and end are free
         for(int i = 1; i < dOffset; i++) {
-            Position p = new Position(start.getRow() + i * hDirection, (char) (start.getColumn() + i * vDirection));
-            if(!spotFreeToTake(piece, p)) {
+            Position p = new Position(start.getRow() + i * vDirection, (char) (start.getColumn() + i * hDirection));
+            if(!isOpen(p)) {
+                //throw new Exception("spot: " + p.toString());
                 return false;
             }
         }
@@ -154,7 +155,7 @@ public class ChessBoard implements Cloneable {
         
         for(int i = 1; i < Math.abs(end.getColumn() - start.getColumn()); i++) {
             Position p = new Position(start.getRow(), (char) (start.getColumn() + i * direction));
-            if(!spotFreeToTake(piece, p)) {
+            if(!isOpen(p)) {
                 return false;
             }
         }
@@ -172,7 +173,7 @@ public class ChessBoard implements Cloneable {
         
         for(int i = 1; i < Math.abs(end.getRow() - start.getRow()); i++) {
             Position p = new Position(start.getRow() + i * direction, start.getColumn());
-            if(!spotFreeToTake(piece, p)) {
+            if(!isOpen(p)) {
                 return false;
             }
         }
@@ -191,7 +192,7 @@ public class ChessBoard implements Cloneable {
         else if(spot.getRow() < 1 || spot.getRow() > 8 || spot.getColumn() < 'A' || spot.getColumn() > 'H') {
             return false;
         }
-        else if(!isOpen(spot) || getPieceAt(spot).getColor() == piece.getColor()) {
+        else if(!isOpen(spot) && getPieceAt(spot).getColor() == piece.getColor()) {
             return false;
         }
         return true;
@@ -208,11 +209,11 @@ public class ChessBoard implements Cloneable {
     }
     
     public boolean isOpen(Position spot) {
-        return getPieceAt(spot) != null;
+        return getPieceAt(spot) == null;
     }
     
     public boolean isOpen(int row, char col) {
-        return getPieceAt(row, col) != null;
+        return getPieceAt(row, col) == null;
     }
     
     public ChessPiece getPieceAt(Position spot) {
@@ -228,7 +229,7 @@ public class ChessBoard implements Cloneable {
     }
     
     private int column(char column) {
-        return column - 'A' - 1;
+        return column - 'A';
     }
     
     @Override
@@ -252,5 +253,16 @@ public class ChessBoard implements Cloneable {
             }
         }
         return newBoard;
+    }
+    
+    public String[][] getBoard() {
+        String [][]stringBoard = new String[8][8];
+        
+        for(int row = 1; row <= 8; row++) {
+            for(char col = 'A'; col <= 'H'; col++) {
+                stringBoard[row(row)][column(col)] = isOpen(row, col) ? "  " : getPieceAt(row, col).toString();
+            }
+        }
+        return stringBoard;
     }
 }
