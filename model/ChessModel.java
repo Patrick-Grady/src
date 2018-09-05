@@ -30,7 +30,7 @@ public class ChessModel {
         getNextState("start");
     }
     
-    // API
+// API
     public void restart() throws Exception {
         states.clear();
         getNextState("start");
@@ -41,8 +41,22 @@ public class ChessModel {
     }
       
     public void move(String sender, String move) throws Exception, CloneNotSupportedException {
-        validateSender(sender);
-        getNextState(move);
+        move = move.toUpperCase();
+        switch(move) {
+            case "R":
+            case "RESTART":
+                restart();
+                return;
+            case "U":
+            case "UNDO":
+                ChessState last = getLastState();
+                if(last != null && last.getCurrentPlayerColor() != getCurrentState().getCurrentPlayerColor()) 
+                    undo();
+                return;
+            default:
+                validateSender(sender);
+                getNextState(move);
+        }         
     }
     
     public String[] getAllMovesFrom(String piece) throws Exception {
@@ -53,10 +67,17 @@ public class ChessModel {
         return getCurrentState().getAllMovesFrom(piece);
     }
     
+    public ChessState getBoardState() {
+        return getCurrentState();
+    }
+    
     public String getState() throws Exception {
-        ArrayList<String> results = new ArrayList<>();
         ChessState state = getCurrentState();
-        
+        if(state == null) {
+            return "start";
+        }
+
+        ArrayList<String> results = new ArrayList<>();
         results.add(state.getCurrentPlayerColor().toString());
         
         if(state.checkmated()) {
@@ -76,21 +97,24 @@ public class ChessModel {
         return getCurrentState().getBoard();
     }
     
-    // validation
+// validation
+    
+    // sender
     private void validateSender(String sender) throws Exception {
-        ChessPlayer player = sender.equals(player1.getName()) ? player1 : player2;
+        ChessPlayer player = getPlayer(sender);
         if(player == null) {
-            throw new Exception("Player does not exist.");
+            throw new Exception("Player does not exist: " + sender);
         }
-        else if(!matchesCurrentPlayer(player)) {
-            throw new Exception("Wrong turn");
+        else if(!isCurrentPlayer(player)) {
+            throw new Exception("Not your turn: " + sender);
         }
     }
     
-    private boolean matchesCurrentPlayer(ChessPlayer player) {
+    private boolean isCurrentPlayer(ChessPlayer player) {
         return player.getColor() == getCurrentState().getCurrentPlayerColor();
     }
     
+    // move
     private void validate(String move) throws Exception {
         if(syntaxError(move)) {
             throw new Exception("Improperly formatted move: " + move);
@@ -133,9 +157,9 @@ public class ChessModel {
         return row >= 1 && row <= 8 && col >= 'A' && col <= 'H';        
     }
     
-    // util/convenience methods
+// util/convenience methods
     private void getNextState(String move) throws Exception, CloneNotSupportedException {
-        if(!move.equals("start")) {
+        if(!move.equalsIgnoreCase("start")) {
             validate(move);
         }
         ChessState next = ChessState.getNextState(getCurrentState(), move);
@@ -143,7 +167,7 @@ public class ChessModel {
     }
         
     private ChessState rollBackState() {
-        return states.removeFirst();
+        return states == null || states.size() < 2 ? null : states.removeFirst();
     }
     
     private ChessState getCurrentState() {
@@ -152,5 +176,18 @@ public class ChessModel {
     
     private void setCurrentState(ChessState next) {
         states.addFirst(next);
+    }
+    
+    private ChessState getLastState() {
+        if(states == null || states.size() < 2)
+            return null;
+        ChessState current = rollBackState();
+        ChessState last = getCurrentState();
+        setCurrentState(current);
+        return last;
+    }
+    
+    private ChessPlayer getPlayer(String name) {
+        return name.equals(player1.getName()) ? player1 : player2;
     }
 }

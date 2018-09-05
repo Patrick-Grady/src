@@ -260,7 +260,7 @@ public class ChessBoard implements Cloneable {
         
         for(int row = 1; row <= 8; row++) {
             for(char col = 'A'; col <= 'H'; col++) {
-                stringBoard[row(row)][column(col)] = isOpen(row, col) ? "  " : getPieceAt(row, col).toString();
+                stringBoard[row(row)][column(col)] = isOpen(row, col) ? "\u3000" : getPieceAt(row, col).toString();
             }
         }
         return stringBoard;

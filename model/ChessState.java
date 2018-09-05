@@ -8,13 +8,15 @@ public class ChessState implements Cloneable {
     
     ChessBoard board;
     ChessModel.Color color;    
+    ArrayList<String> history;
     
     private ChessState(ChessModel.Color color) {
         this.color = color;
         board = new ChessBoard();
+        history = new ArrayList<>();
     }
     
-    // API
+// API
     public ChessModel.Color getCurrentPlayerColor() {
         return this.color;
     }
@@ -75,25 +77,15 @@ public class ChessState implements Cloneable {
 //        return validRef(move) && board.pathIsClear(start, end) && !movePutsPlayerInCheck(start, end);
     }
     
-    public void execute(String move) {
-        if(move.equals("0-0") || move.equals("O-O")) {
-            castle(KING_SIDE);
-        }
-        else if(move.equals("0-0-0") || move.equals("O-O-O")) {
-            castle(QUEEN_SIDE);
-        }
-        else {
-            Position []positions = getStartAndEnd(move);
-            board.move(positions[0], positions[1]);
-        }
-        color = getOpponent(color);
-    }
-    
     public String[][] getBoard() {
         return board.getBoard();
     }
     
-    // helper
+    public ArrayList<String> getHistory() {
+        return history;
+    }
+    
+// helper
     private boolean inCheck(ChessModel.Color color) throws Exception {
         ChessModel.Color opponent = getOpponent(color);    
         Position kingPosition = board.getKingPosition(color);
@@ -108,7 +100,7 @@ public class ChessState implements Cloneable {
         return false;
     }
     
-    public boolean canMoveAny(ChessModel.Color color) throws Exception {
+    private boolean canMoveAny(ChessModel.Color color) throws Exception {
         ArrayList<Position> pieces = board.getAllPieces(color);
         
         for(Position p : pieces) {
@@ -136,7 +128,6 @@ public class ChessState implements Cloneable {
         return canMoveTo;
     }
     
-    // helper
     private void castle(boolean kingSide) {
         // locate pieces based on color and side
         int row = color == ChessModel.Color.white ? 1 : 8;
@@ -153,7 +144,22 @@ public class ChessState implements Cloneable {
         board.move(rookStart, rookEnd);
     }
     
-    // validation
+    private void execute(String move) {
+        if(move.equals("0-0") || move.equals("O-O")) {
+            castle(KING_SIDE);
+        }
+        else if(move.equals("0-0-0") || move.equals("O-O-O")) {
+            castle(QUEEN_SIDE);
+        }
+        else {
+            Position []positions = getStartAndEnd(move);
+            board.move(positions[0], positions[1]);
+        }
+        history.add(String.format("%-8s%8s", (getCurrentPlayerColor() + ": "), move));
+        color = getOpponent(color);
+    }
+    
+// validation
     private ChessModel.PieceType mapLetterToType(char letter) {
         switch(letter) {
             case 'N':
@@ -255,6 +261,7 @@ public class ChessState implements Cloneable {
     public ChessState clone() throws CloneNotSupportedException {
         ChessState clone = (ChessState) super.clone();
         clone.board = board.clone();
+        clone.history = (ArrayList<String>) history.clone();
         
         return clone;
     }
